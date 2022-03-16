@@ -2,6 +2,7 @@ import os
 import random
 import requests
 import numpy as np
+import time
 
 from gensim.models import KeyedVectors
 
@@ -37,8 +38,19 @@ def get_wikidata_id_from_wikipedia_id(wikipedia_id):
 
 def get_graph_from_wikidata_id(wikidata_id, central_item):
     url = 'https://query.wikidata.org/bigdata/namespace/wdq/sparql'
-    data = requests.get(url, params={'query': _query % wikidata_id,
-                                     'format': 'json'}).json()
+    try:
+        data = requests.get(url, params={'query': _query % wikidata_id, 'format': 'json'},
+                            headers={
+                                "User-Agent": "ned-graphs research project (anastasiia.iurshina@ipvs.uni-stuttgart.de)"})
+    except Exception as e:
+        if data.status_code == 429:
+            time.sleep(60)
+            data = requests.get(url, params={'query': _query % wikidata_id, 'format': 'json'},
+                                headers={
+                                    "User-Agent": "ned-graphs research project (anastasiia.iurshina@ipvs.uni-stuttgart.de)"})
+
+    data = data.json()
+
     triplets = []
     for item in data['results']['bindings']:
         try:
